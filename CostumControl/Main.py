@@ -32,27 +32,22 @@ def pingThread():
     m.generalControls.ping()
 
 def turnRobot (target):
-    
+    sensorData = m.readSensors.readAll()
     start = sensorData["YAW"]
     yaw = start
+    m.turn_left(200,0)
+    target -= 0.1
 
     while yawdiff(start, yaw) < target:
-        try:
-            
+        try:     
             sensorData = m.readSensors.readAll()
             yaw = sensorData["YAW"]
-            # if (index == 0):
-            #     target = yaw
-            #     print ("target" + str(yaw))
-            # index = index +1
             print ("YAW: " + str(yaw))
-            # if yaw <= target:
-            #     currentHeading=target
-            #     print("REACHED")
-            #     exit()
-            #     break
         except(KeyError):
             print("keyerror")
+
+    print("STOPPING")
+    m.stop()
 
 def yawdiff(start, yaw):
     if(start > 0 and yaw < 0):
@@ -112,7 +107,8 @@ if __name__ == "__main__":
         atexit.register(exitHandler)
         m.emergency_stop_release()
         # drive(2)
-        turnRobot("N")   
+        m.generalControls.send_cmd("SYS CAL")
+        turnRobot(3.14)   
         
 
     finally:
