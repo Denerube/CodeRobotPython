@@ -31,25 +31,12 @@ def pingThread():
     threading.Timer(0.5, pingThread).start()
     m.generalControls.ping()
 
-def turnRobot (orientation):
-    target = 0
-    index =0
-    # if orientation == "N":
-    #     target =1
-    #     m.turn_right(200,10)
-    # elif orientation =="E":
-    #     target = 3.14/2
-    #     m.turn_right(200,10)
-    # elif orientation =="S":
-    #     target = -1
-    #     m.turn_right(200,10)
+def turnRobot (target):
+    
+    start = sensorData["YAW"]
+    yaw = start
 
-    # elif orientation =="W":
-    #     target = -3.14/2
-    #     m.turn_left(200,10)
-    # pingThread()
-
-    while True:
+    while yawdiff(start, yaw) < target:
         try:
             
             sensorData = m.readSensors.readAll()
@@ -67,6 +54,11 @@ def turnRobot (orientation):
         except(KeyError):
             print("keyerror")
 
+def yawdiff(start, yaw):
+    if(start > 0 and yaw < 0):
+        return (yaw + 2* 3.14) - start
+    else:
+        return yaw-start
 
 
 
