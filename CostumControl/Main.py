@@ -6,6 +6,9 @@ import time
 import atexit
 import threading
 import math
+import sys
+import json
+import requests
 from move_controls import Controls
 from general_controls import GeneralControls
 
@@ -13,12 +16,25 @@ m=Controls()
 sensorData=dict()
 instructions=[]
 currentHeading="N"
+url="https://ai-4x4-api.herokuapp.com/plsSendNext"
+lastMoveID=0
+moveCommand = { "OrderNr" : 0 , "Direction" : "", "Afstand" : 0 }
+JsonFileName="data.txt"
+
+# //van 1 - x voor volgorde -> orderNr
 
 
+def writeToJsonFile(data):
+    with open(JsonFileName, 'w') as json_file:
+        json.dump(data, json_file)
 
-def getInstructions():
-    # get all the instructions from the api
-    pass
+def ReadFromJsonFile():
+    with open(JsonFileName) as json_file:
+        data = json.load(json_file)
+    print (data)
+    return data
+
+
 
 def exitHandler():
     print("emergency stop")
@@ -32,6 +48,7 @@ def pingThread():
     m.generalControls.ping()
 
 def turnRobot (target):
+    m.generalControls.send_cmd("SYS CAL")
     sensorData = m.readSensors.readAll()
     start = sensorData["YAW"]
     yaw = start
@@ -55,10 +72,18 @@ def yawdiff(start, yaw):
     else:
         return yaw-start
 
-
-
-
-
+def getNextMove():
+    url="https://ai-4x4-api.herokuapp.com/plsSendNext"
+    x=requests.get(url)
+    data=x.json()
+    print(data)
+    writeToJsonFile(data)
+    if "End" in data.keys() :
+        print("END")
+        return False
+    else:
+        print(data)
+        return data
 
 def drive(distance):
     check=0
@@ -87,32 +112,65 @@ def drive(distance):
         except(KeyError):
             print("error?")
         
+# example of incoming json
+# /sendmoves
+# { moves: [ { "OrderNr" : int //van 1 - x voor volgorde "Direction" : string, "Afstand" : int } ] }
+# /plsSendNext
+# { "OrderNr" : int //van 1 - x voor volgorde "Direction" : string, "Afstand" : int }
 
-if __name__ == "__main__":
-
-    # get all instruction
-    # read all instructions
-    # for instruction in instructions:
-    #     then read instruction per instrction
-    #     check direction first
-    #      put it int he right direction
-    #      drive
-    #      stop and go to the next instruction
-
-
-
-    try:
-        print("STARTING PROGRAM")
+def tryStuff():
+    try: 
         pingThread()
         atexit.register(exitHandler)
         m.emergency_stop_release()
-        # drive(2)
-        m.generalControls.send_cmd("SYS CAL")
-        turnRobot(3.14)   
-        
-
+        drive(2)      
+        # turnRobot(3.14)
+        # nextmove= getNextMove()   
     finally:
         exitHandler()
+
+
+if __name__ == "__main__":
+    print("STARTING PROGRAM")
+    
+    
+    tryStuff()
+
+
+
+   
+
+    # nextmove=getNextMove()
+
+    # index =0
+    # while (nextmove != False):
+    #     lastMoveID=nextmove["OrderNr"]
+    #     if (sys.argv[1] == "N" and index ==0):
+            
+    #         # ignore the direction , this means robot has been manually reset
+    #         #  does not need to be checked if application doesn't run for the first time
+
+    #         pass
+    #     elif(sys.argv[1] =="Y" or index >=1):
+    #         # do as normal
+    #         try:
+    #             if (nextmove["Direction"] =="N"):
+    #                 # just drive ,no direction changes
+
+                
+    #                 pingThread()
+    #                 atexit.register(exitHandler)
+    #                 m.emergency_stop_release()
+    #                 # drive(2)
+    #             else:
+    #                 # change direction,then drive
+    #                 turnRobot(3.14)
+    #                 drive(2)
+                  
+    #         finally:
+    #             exitHandler()
+    #     index +1
+    #     nextmove= getNextMove() 
     
     
     
