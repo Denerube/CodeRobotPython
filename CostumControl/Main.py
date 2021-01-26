@@ -20,8 +20,49 @@ url="https://ai-4x4-api.herokuapp.com/plsSendNext"
 lastMoveID=0
 moveCommand = { "OrderNr" : 0 , "Direction" : "", "Afstand" : 0 }
 JsonFileName="data.txt"
+WheelCirc=0.27*math.pi
+leftFrontEncoderStart = 0
+leftBackEncoderStart =0
+RightFrontEncoderStart =0
+RightBackEncoderStart =0
+
 
 # //van 1 - x voor volgorde -> orderNr
+
+def calculateDistance(target,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
+    # self.sensorValues["EncoderPositionCountLeft"+p]=values[0]
+    # self.sensorValues["EncoderPositionCountRight"+p]=values[1]
+ 
+    leftDifferenceFront=float(LeftFrontencoderAbs)-float(leftFrontEncoderStart)
+    leftDifferenceBack=float(leftBackEncoderAbs)-float(leftBackEncoderStart)
+    
+
+    RightDifferenceFront=float(RightFrontencoderAbs)-float(RightFrontEncoderStart)
+    RightDifferenceBack=float(RightBackEncoderAbs)-float(RightBackEncoderStart)
+
+    
+    leftDistanceTravelledFront=leftDifferenceFront  * WheelCirc /380
+    leftDistanceTravelledBack=leftDifferenceBack  * WheelCirc /380
+    RightDistanceTravelledFront =RightDifferenceFront  * WheelCirc /380
+    RightDistanceTraveledBack=RightDifferenceBack  * WheelCirc /380
+
+
+
+    if (leftDistanceTravelledBack >= 1.75):
+        # m.stop()
+        print("LEFT" + str(leftDistanceTravelledFront) + " BACK, " +str(leftDistanceTravelledBack))
+        print("RIGHT" + str(RightDistanceTravelledFront) +" BACK, " + str(RightDistanceTraveledBack))
+        return False
+    else:
+        return True
+
+   
+
+    
+
+
+
+
 
 
 def writeToJsonFile(data):
@@ -87,43 +128,58 @@ def getNextMove():
 
 def drive(distance):
     check=0
-    distance= distance
+    if distance ==1:
+        distance += 0.50
     print("distance " + str(distance))
 
     sensorData = dict()
     
     for x in range(1000):
-         m.readSensors.readAll()
+        sensorData=m.readSensors.readAll()
+        try:
+            global leftFrontEncoderStart 
+            leftFrontEncoderStart = float(sensorData["EncoderPositionCountLeftFront"])
+            global leftBackEncoderStart
+            # print(leftBackEncoderStart)
+            leftBackEncoderStart=float(sensorData["EncoderPositionCountLeftRear"])
+            global RightFrontEncoderStart
+            RightFrontEncoderStart=float(sensorData["EncoderPositionCountRightFront"])
+            global RightBackEncoderStart
+            RightBackEncoderStart=float(sensorData["EncoderPositionCountRightRear"])
+        except(KeyError):
+            print("KEYERROR BIJ INIT")
+   
+
+        
 
     m.go_forward(100,10)
-    
+    m.readSensors.readAll()
+   
     while True:
         try:
             sensorData=m.readSensors.readAll()
-            # print("LEFT DIS")
-            # print(sensorData["leftDis"])
-            check=sensorData["leftDis"]
+            check = calculateDistance(1,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
+            # check=sensorData["EncoderPositionCountLeft"]
             # print("CHECK" + str(check))
 
-
-            if(distance <= check):
-                print("STOP")
+            if check == False:
                 exit()
+
+
+            # if(distance <= check):
+            #     print("STOP")
+            #     exit()
         except(KeyError):
             print("error?")
         
-# example of incoming json
-# /sendmoves
-# { moves: [ { "OrderNr" : int //van 1 - x voor volgorde "Direction" : string, "Afstand" : int } ] }
-# /plsSendNext
-# { "OrderNr" : int //van 1 - x voor volgorde "Direction" : string, "Afstand" : int }
+
 
 def tryStuff():
     try: 
         pingThread()
         atexit.register(exitHandler)
         m.emergency_stop_release()
-        drive(2)      
+        drive(1)      
         # turnRobot(3.14)
         # nextmove= getNextMove()   
     finally:

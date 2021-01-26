@@ -17,6 +17,7 @@ class ReadSensors():
         self.WHEEL_CNT = 380;  #4*5*15/2 = 150 * 1.7 = 255
         self.WHEEL_P = math.pi * 0.27;      #//radius 0.27/2
         self.WHEEL_R = 0.27 / 2
+        self.WheelCirc=0.27*math.pi
 
         self.WHEELDIS = 0.54
         self.estPost = [0,0,0] #/ this is under ENU system, but estPos[2] is orientation, Yaw, not "U"
@@ -57,7 +58,7 @@ class ReadSensors():
             pass#self.process_GPS_message(message)
 
     def process_IMU_message(self, message: AnyStr) -> None:
-        print(message)
+        # print(message)
         strTest = message
         strletter = message.find("W")
         if (strTest[strletter+2] == "-"):
@@ -153,8 +154,8 @@ class ReadSensors():
             p = "Front"
         elif driver_board_id == 1:
             p = "Rear"
-        #print("Encoder position count left {0} = {1}".format(p, values[0]))
-        #print("Encoder position count right {0} = {1}".format(p, values[1]))
+        # print("Encoder position count left {0} = {1}".format(p, values[0]))
+        # print("Encoder position count right {0} = {1}".format(p, values[1]))
         self.sensorValues["EncoderPositionCountLeft"+p]=values[0]
         self.sensorValues["EncoderPositionCountRight"+p]=values[1]
         
@@ -235,6 +236,7 @@ class ReadSensors():
         #print("Motor driver board power 5V {0} = {1} V".format(p, int(values[2]) / 1000.0))
         self.sensorValues["MotorDriverBoardPower12V"+p]= int(values[0])/10.00
         self.sensorValues["MotorDriverBoardPowerMain"+p]= int(values[1])/10.00
+        print("VOLT {0}".format(int(values[1])/10.00))
         self.sensorValues["MotorDriverBoardPower5V"+p]= int(values[2])/10.00
 
 
@@ -270,6 +272,23 @@ class ReadSensors():
         self.sensorValues["MotorDriverBoardStatusBrushlessSensorFault" +p] =brushless_sensor_fault
         self.sensorValues["MotorDriverBoardStatusMostfetFailure" +p] =mosfet_failure
         self.sensorValues["MotorDriverBoardStatusCostumFlag" +p] = custom_flag
+
+    # def calculateDistance(LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
+    #     # self.sensorValues["EncoderPositionCountLeft"+p]=values[0]
+    #     # self.sensorValues["EncoderPositionCountRight"+p]=values[1]
+        
+    #     leftDifferenceFront=int(LeftFrontencoderAbs)-int(leftFrontEncoderStart)
+    #     leftDifferenceBack=int(leftBackEncoderAbs)*int(leftBackEncoderStart)
+
+    #     RightDifferenceFront=int(RightFrontencoderAbs)-int(RightFrontencoderStart)
+    #     RightDifferenceBack=int(RightBackEncoderAbs)*int(RightBackEncoderStart)
+
+        
+    #     leftDistanceTravelled=((leftDifferenceFront+leftDifferenceBack) /2)  * WheelCirc /380
+    #     RightDistanceTravelled =((RightDifferenceFront+RightDifferenceBack)/2)  *WheelCirc /380
+
+    #     print("LEFT" + str(leftDistanceTravelled))
+    #     print("RIGHT" + str(RightDistanceTravelled))
     
     def encoderEstimate(self,leftEncoder,rightEncoder):
         leftDis=self.leftDis
@@ -281,26 +300,21 @@ class ReadSensors():
         
        
 
-        if (firstEncoder):
-            firstEncoder = False
-            self.preEstPos[0] = self.estPost[0]
-            self.preEstPos[1] = self.estPost[1]
-            self.preEstPos[2] = self.estPost[2]
-        else:
-            leftDis= self.MOTDIR * leftEncoder / self.WHEEL_CNT * (2 * math.pi * self.WHEEL_R)
+       
+        leftDis= self.MOTDIR * leftEncoder / self.WHEEL_CNT * (2 * math.pi * self.WHEEL_R)
             
             
-            rightDis = -self.MOTDIR * rightEncoder / self.WHEEL_CNT * (2 * math.pi * self.WHEEL_R)
+        rightDis = -self.MOTDIR * rightEncoder / self.WHEEL_CNT * (2 * math.pi * self.WHEEL_R)
             
-            vel = (leftDis + rightDis) / 2 / self.encoderT
-            self.sensorValues["vel"]=vel   
+        vel = (leftDis + rightDis) / 2 / self.encoderT
+        self.sensorValues["vel"]=vel   
             
-            self.rightdis=self.rightdis+rightDis
-            self.leftDis=self.leftDis + leftDis
-            print("leftDisInFunction " + str(self.leftDis))
-            #print("RightDisInFunction " + str(self.rightdis))
-            self.sensorValues["leftDis"]=self.leftDis
-            self.sensorValues["rightDis"]=self.rightdis
+        self.rightdis=self.rightdis+rightDis
+        self.leftDis=self.leftDis + leftDis
+        # print("leftDisInFunction " + str(self.leftDis))
+        #print("RightDisInFunction " + str(self.rightdis))
+        self.sensorValues["leftDis"]=self.leftDis
+        self.sensorValues["rightDis"]=self.rightdis
 
              
     def getCurrentTimeInMilliseconds(self):
