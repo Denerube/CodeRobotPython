@@ -185,29 +185,24 @@ if __name__ == "__main__":
     print("STARTING PROGRAM")
     
     encoderStartValues=getStartEncoderPositions()
-
-    queue1In = Queue() # put the json data you get from the API in this queue
-    queue2In = Queue() # put the json data you get from the API in this queue
-    queue3In = Queue() # put the json data you get from the API in this queue
+    queueIn = [Queue(), Queue(), Queue()]
     queueOut = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
 
-    readDataThread1 = Thread(target=drive, args=(queue1In, queueOut))
-    readDataThread2 = Thread(target=drive, args=(queue2In, queueOut))
-    readDataThread3 = Thread(target=drive, args=(queue3In, queueOut))
+    #readDataThread1 = Thread(target=drive, args=(queueIn[0], queueOut))
+    #readDataThread2 = Thread(target=drive, args=(queueIn[1], queueOut))
+    #readDataThread3 = Thread(target=drive, args=(queueIn[2], queueOut))
 
     startObject= {
         "encoderStartValues":encoderStartValues,
         "TargetDistance":1
     }
-    
-    queue1In.put(startObject)
-    queue2In.put(startObject)
-    queue3In.put(startObject)
 
+    readDataThread = []
 
-    readDataThread1.start()
-    readDataThread2.start()
-    readDataThread3.start()
+    for x in range(0, len(queueIn) - 1):
+        readDataThread[x] = Thread(target=drive, args=(queueIn[x], queueOut))
+        queueIn[x].put(startObject)
+        readDataThread[x].start()
 
     try:
         atexit.register(exitHandler)
