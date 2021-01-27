@@ -138,7 +138,7 @@ def getStartEncoderPositions():
             leftBackEncoderStart=float(sensorData["EncoderPositionCountLeftRear"])
             RightFrontEncoderStart=float(sensorData["EncoderPositionCountRightFront"])
             RightBackEncoderStart=float(sensorData["EncoderPositionCountRightRear"])
-            print("DONE?")
+            # print("DONE?")
         except(KeyError):
             print("KEYERROR BIJ INIT")
     StartValuesArray ={ "EncoderPositionCountLeftFront" : leftFrontEncoderStart,

@@ -55,14 +55,15 @@ class ReadSensors():
     def process(self, message: AnyStr):
         
         if (message.startswith('#')):
-            self.process_IMU_message(message)
+            pass # self.process_IMU_message(message)
         elif (message.startswith('MM')):
             self.process_motor_message(message)
         elif (message.startswith('$')):
             pass#self.process_GPS_message(message)
 
     def process_IMU_message(self, message: AnyStr) -> None:
-        # print(message)
+        # 49,YAW,2.77,GYRO,-3,32,-8,ACC,4,0,252,ADC,1253,400,8,1,
+        print(message)
         strTest = message
         strletter = message.find("W")
         if (strTest[strletter+2] == "-"):
