@@ -42,6 +42,7 @@ class ReadSensors():
         message = self.sockFile.readline().rstrip()
         #print(message)
         self.process(message)
+
         return self.sensorValues
            
         
@@ -74,10 +75,7 @@ class ReadSensors():
         self.sensorValues["IMU"]=message
         self.sensorValues["YAW"]=fltprint
 
-        # front =1
-        # back =-1
-        # east = 3.14/2
-        # weast = 3.14/2
+        
         
         #print(message)
 
@@ -155,13 +153,15 @@ class ReadSensors():
         p = ""
         if driver_board_id == 0:
             p = "Front"
+           
         elif driver_board_id == 1:
             p = "Rear"
         # print("Encoder position count left {0} = {1}".format(p, values[0]))
         # print("Encoder position count right {0} = {1}".format(p, values[1]))
+        
         self.sensorValues["EncoderPositionCountLeft"+p]=values[0]
         self.sensorValues["EncoderPositionCountRight"+p]=values[1]
-        
+       
 
     def process_motor_encoder_position_count_relative(self, driver_board_id: int, param: AnyStr) -> None:
         values = param.split(":")
@@ -239,7 +239,7 @@ class ReadSensors():
         #print("Motor driver board power 5V {0} = {1} V".format(p, int(values[2]) / 1000.0))
         self.sensorValues["MotorDriverBoardPower12V"+p]= int(values[0])/10.00
         self.sensorValues["MotorDriverBoardPowerMain"+p]= int(values[1])/10.00
-        print("VOLT {0}".format(int(values[1])/10.00))
+        # print("VOLT {0}".format(int(values[1])/10.00))
         self.sensorValues["MotorDriverBoardPower5V"+p]= int(values[2])/10.00
 
 
@@ -318,31 +318,8 @@ class ReadSensors():
         #print("RightDisInFunction " + str(self.rightdis))
         self.sensorValues["leftDis"]=self.leftDis
         self.sensorValues["rightDis"]=self.rightdis
-    def calculateDistanceBasedOnAbsEcnoderValues(self,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
-        if self.index ==0:
-            #  first time executing this function
-            leftFrontEncoderStart = leftBackEncoderAbs
-            leftBackEncoderStart = leftBackEncoderAbs
-            RightFrontEncoderStart = RightFrontencoderAbs
-            RightBackEncoderStart =RightBackEncoderAbs
-            self.index +=1
-        else:
-            pass
-        leftDifferenceFront=float(LeftFrontencoderAbs)-float(leftFrontEncoderStart)
-        leftDifferenceBack=float(leftBackEncoderAbs)-float(leftBackEncoderStart)
-        
-        RightDifferenceFront=float(RightFrontencoderAbs)-float(RightFrontEncoderStart)
-        RightDifferenceBack=float(RightBackEncoderAbs)-float(RightBackEncoderStart)
 
-        leftDistanceTravelledFront=leftDifferenceFront  * self.WheelCirc /380
-        leftDistanceTravelledBack=leftDifferenceBack  *  self.WheelCirc /380
-        RightDistanceTravelledFront =RightDifferenceFront  *  self.WheelCirc /380
-        RightDistanceTraveledBack=RightDifferenceBack  *  self.WheelCirc /380
-
-        self.sensorValues["leftDistanceTravelledFront"]=leftDistanceTravelledFront
-        self.sensorValues["leftDistanceTravelledBack"]=leftDistanceTravelledBack
-        self.sensorValues["RightDistanceTravelledFront"]=RightDistanceTravelledFront
-        self.sensorValues["RightDistanceTraveledBack"]=RightDistanceTraveledBack
+    
 
         
 

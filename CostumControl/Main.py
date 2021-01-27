@@ -48,21 +48,13 @@ def calculateDistance(target,LeftFrontencoderAbs,leftBackEncoderAbs,RightFronten
 
 
 
-    if (leftDistanceTravelledBack >= 1.75):
+    if (leftDistanceTravelledBack >= 1):
         # m.stop()
         print("LEFT" + str(leftDistanceTravelledFront) + " BACK, " +str(leftDistanceTravelledBack))
         print("RIGHT" + str(RightDistanceTravelledFront) +" BACK, " + str(RightDistanceTraveledBack))
         return False
     else:
         return True
-
-   
-
-    
-
-
-
-
 
 
 def writeToJsonFile(data):
@@ -85,7 +77,8 @@ def exitHandler():
     
             
 def pingThread():
-    threading.Timer(0.5, pingThread).start()
+    t=threading.Timer(0.5, pingThread)
+    t.start()
     m.generalControls.ping()
 
 def turnRobot (target):
@@ -126,13 +119,13 @@ def getNextMove():
         print(data)
         return data
 
+
 def drive(distance):
-    check=0
     if distance ==1:
         distance += 0.50
     print("distance " + str(distance))
+    sensorData=dict()
 
-    sensorData = dict()
     
     for x in range(1000):
         sensorData=m.readSensors.readAll()
@@ -148,46 +141,41 @@ def drive(distance):
             RightBackEncoderStart=float(sensorData["EncoderPositionCountRightRear"])
         except(KeyError):
             print("KEYERROR BIJ INIT")
-   
-
-        
-
     m.go_forward(100,10)
-    m.readSensors.readAll()
-   
     while True:
+        sensorData=m.readSensors.readAll()
         try:
-            sensorData=m.readSensors.readAll()
             check = calculateDistance(1,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
-            # check=sensorData["EncoderPositionCountLeft"]
-            # print("CHECK" + str(check))
-
             if check == False:
+                print("STOP")
                 exit()
-
-
-            # if(distance <= check):
-            #     print("STOP")
-            #     exit()
         except(KeyError):
-            print("error?")
-        
+            print("keyerror in main")
+            pass
 
 
 def tryStuff():
-    try: 
-        pingThread()
+    try:
         atexit.register(exitHandler)
+        pingThread()
         m.emergency_stop_release()
         drive(1)      
         # turnRobot(3.14)
         # nextmove= getNextMove()   
     finally:
+        
         exitHandler()
 
 
 if __name__ == "__main__":
     print("STARTING PROGRAM")
+    # queue1In = Queue() # put the json data you get from the API in this queue
+    # queue2Out = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+
+    # readDataThread = Thread(target=readData, args=(queue1In, queue2Out))
+    # readDataThread.start() 
+
+    # t2 = Thread(target=modify_variable, args=(queue2, queue1))
     
     
     tryStuff()
@@ -198,35 +186,6 @@ if __name__ == "__main__":
 
     # nextmove=getNextMove()
 
-    # index =0
-    # while (nextmove != False):
-    #     lastMoveID=nextmove["OrderNr"]
-    #     if (sys.argv[1] == "N" and index ==0):
-            
-    #         # ignore the direction , this means robot has been manually reset
-    #         #  does not need to be checked if application doesn't run for the first time
-
-    #         pass
-    #     elif(sys.argv[1] =="Y" or index >=1):
-    #         # do as normal
-    #         try:
-    #             if (nextmove["Direction"] =="N"):
-    #                 # just drive ,no direction changes
-
-                
-    #                 pingThread()
-    #                 atexit.register(exitHandler)
-    #                 m.emergency_stop_release()
-    #                 # drive(2)
-    #             else:
-    #                 # change direction,then drive
-    #                 turnRobot(3.14)
-    #                 drive(2)
-                  
-    #         finally:
-    #             exitHandler()
-    #     index +1
-    #     nextmove= getNextMove() 
     
     
     
