@@ -151,62 +151,72 @@ def getStartEncoderPositions():
 
 
 
-def drive(queue1In,queue2Out):
+def drive(queue1In:Queue,queue2Out:Queue):
     sensorData=dict()
-    
-    
+    begindata=dict()
+    doCalc= False
+    TargetDistance=1
 
     while True:
-        
+        if not queue1In.empty:
+            # get data and do calc
+            var = queue1In.get()
+            doCalc=True
+            begindata=var["encoderStartValues"]
+            TargetDistance=var["TargetDistance"]
 
         sensorData=m.readSensors.readAll()
-        try:
-            check = calculateDistance(1,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
-            if check == False:
-                print("STOP")
-                exit()
-        except(KeyError):
-            print("keyerror in main")
-            pass
+        if doCalc:
+            try:
+                check = calculateDistance(TargetDistance,begindata,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
+                if check == False:
+                    print("STOP")
+                    doCalc=False
+                    exit()
+            except(KeyError):
+                print("keyerror in main")
+                pass
 
 
-def tryStuff():
-    try:
-        atexit.register(exitHandler)
-        pingThread()
-            
-        # turnRobot(3.14)
-        # nextmove= getNextMove()   
-    finally:
-        
-        exitHandler()
+
 
 
 if __name__ == "__main__":
     print("STARTING PROGRAM")
+    
     encoderStartValues=getStartEncoderPositions()
 
     queue1In = Queue() # put the json data you get from the API in this queue
-    queue2Out = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+    queue2In = Queue() # put the json data you get from the API in this queue
+    queue3In = Queue() # put the json data you get from the API in this queue
+    queueOut = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
 
-    queue1In.put(encoderStartValues)
+    readDataThread1 = Thread(target=drive, args=(queue1In, queueOut))
+    readDataThread2 = Thread(target=drive, args=(queue2In, queueOut))
+    readDataThread3 = Thread(target=drive, args=(queue3In, queueOut))
 
-    readDataThreadA = Thread(target=drive, args=(queue1In, queue2Out))
-    readDataThreadB = Thread(target=drive, args=(queue1In, queue2Out))
-    readDataThreadC = Thread(target=drive, args=(queue1In, queue2Out))
+    startObject= {
+        "encoderStartValues":encoderStartValues,
+        "TargetDistance":1
+    }
     
-    
-    m.go_forward(100,10)
-    queue1In.put(True)
-    queue1In.put(1)
+    queue1In.put(startObject)
+    queue2In.put(startObject)
+    queue3In.put(startObject)
 
-    
-    # readDataThread.start() 
 
-    # t2 = Thread(target=modify_variable, args=(queue2, queue1))
-    
-    
-    tryStuff()
+    readDataThread1.start()
+    readDataThread2.start()
+    readDataThread3.start()
+
+    try:
+        atexit.register(exitHandler)
+        pingThread()
+        m.go_forward(100,10)
+    finally:
+        exitHandler()
+
+        
 
 
 
