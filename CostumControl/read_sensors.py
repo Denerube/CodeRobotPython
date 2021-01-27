@@ -27,6 +27,9 @@ class ReadSensors():
         self.afgelegdeAfstand=0
         self.leftDis=0
         self.rightdis=0
+        self.index=0
+        self.WheelCirc=0.27*math.pi
+
 
 
 
@@ -315,6 +318,33 @@ class ReadSensors():
         #print("RightDisInFunction " + str(self.rightdis))
         self.sensorValues["leftDis"]=self.leftDis
         self.sensorValues["rightDis"]=self.rightdis
+    def calculateDistanceBasedOnAbsEcnoderValues(self,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
+        if self.index ==0:
+            #  first time executing this function
+            leftFrontEncoderStart = leftBackEncoderAbs
+            leftBackEncoderStart = leftBackEncoderAbs
+            RightFrontEncoderStart = RightFrontencoderAbs
+            RightBackEncoderStart =RightBackEncoderAbs
+            self.index +=1
+        else:
+            pass
+        leftDifferenceFront=float(LeftFrontencoderAbs)-float(leftFrontEncoderStart)
+        leftDifferenceBack=float(leftBackEncoderAbs)-float(leftBackEncoderStart)
+        
+        RightDifferenceFront=float(RightFrontencoderAbs)-float(RightFrontEncoderStart)
+        RightDifferenceBack=float(RightBackEncoderAbs)-float(RightBackEncoderStart)
+
+        leftDistanceTravelledFront=leftDifferenceFront  * self.WheelCirc /380
+        leftDistanceTravelledBack=leftDifferenceBack  *  self.WheelCirc /380
+        RightDistanceTravelledFront =RightDifferenceFront  *  self.WheelCirc /380
+        RightDistanceTraveledBack=RightDifferenceBack  *  self.WheelCirc /380
+
+        self.sensorValues["leftDistanceTravelledFront"]=leftDistanceTravelledFront
+        self.sensorValues["leftDistanceTravelledBack"]=leftDistanceTravelledBack
+        self.sensorValues["RightDistanceTravelledFront"]=RightDistanceTravelledFront
+        self.sensorValues["RightDistanceTraveledBack"]=RightDistanceTraveledBack
+
+        
 
              
     def getCurrentTimeInMilliseconds(self):
