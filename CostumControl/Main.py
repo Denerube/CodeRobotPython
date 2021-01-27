@@ -200,7 +200,7 @@ if __name__ == "__main__":
     readDataThread = []
 
     for x in range(0, len(queueIn) - 1):
-        readDataThread[x] = Thread(target=drive, args=(queueIn[x], queueOut))
+        readDataThread.append( Thread(target=drive, args=(queueIn[x], queueOut)))
         queueIn[x].put(startObject)
         readDataThread[x].start()
 
