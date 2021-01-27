@@ -21,17 +21,27 @@ lastMoveID=0
 moveCommand = { "OrderNr" : 0 , "Direction" : "", "Afstand" : 0 }
 JsonFileName="data.txt"
 WheelCirc=0.27*math.pi
-leftFrontEncoderStart = 0
-leftBackEncoderStart =0
-RightFrontEncoderStart =0
-RightBackEncoderStart =0
+# leftFrontEncoderStart = 0
+# leftBackEncoderStart =0
+# RightFrontEncoderStart =0
+# RightBackEncoderStart =0
 
 
 # //van 1 - x voor volgorde -> orderNr
 
-def calculateDistance(target,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
+def calculateDistance(target,beginData,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
     # self.sensorValues["EncoderPositionCountLeft"+p]=values[0]
     # self.sensorValues["EncoderPositionCountRight"+p]=values[1]
+    # UNDER THIS is an example of the begindata you recieve
+    #  StartValuesArray ={ "EncoderPositionCountLeftFront" : leftFrontEncoderStart,
+    #                     "EncoderPositionCountLeftRear" : leftBackEncoderStart,
+    #                     "EncoderPositionCountRightFront":RightFrontEncoderStart,
+    #                     "EncoderPositionCountRightRear":RightBackEncoderStart
+    #                     }
+    leftFrontEncoderStart=beginData["EncoderPositionCountLeftFront"]
+    leftBackEncoderStart=beginData["EncoderPositionCountLeftRear"]
+    RightFrontEncoderStart=beginData["EncoderPositionCountRightFront"]
+    RightBackEncoderStart=beginData["EncoderPositionCountRightRear"]
  
     leftDifferenceFront=float(LeftFrontencoderAbs)-float(leftFrontEncoderStart)
     leftDifferenceBack=float(leftBackEncoderAbs)-float(leftBackEncoderStart)
@@ -119,33 +129,39 @@ def getNextMove():
         print(data)
         return data
 
-
-def drive(distance):
-    if distance ==1:
-        distance += 0.50
-    print("distance " + str(distance))
-    sensorData=dict()
-
+def getStartEncoderPositions():
     
     for x in range(1000):
         sensorData=m.readSensors.readAll()
         try:
-            global leftFrontEncoderStart 
             leftFrontEncoderStart = float(sensorData["EncoderPositionCountLeftFront"])
-            global leftBackEncoderStart
-            # print(leftBackEncoderStart)
             leftBackEncoderStart=float(sensorData["EncoderPositionCountLeftRear"])
-            global RightFrontEncoderStart
             RightFrontEncoderStart=float(sensorData["EncoderPositionCountRightFront"])
-            global RightBackEncoderStart
             RightBackEncoderStart=float(sensorData["EncoderPositionCountRightRear"])
+            print("DONE?")
         except(KeyError):
             print("KEYERROR BIJ INIT")
-    m.go_forward(100,10)
+    StartValuesArray ={ "EncoderPositionCountLeftFront" : leftFrontEncoderStart,
+                        "EncoderPositionCountLeftRear" : leftBackEncoderStart,
+                        "EncoderPositionCountRightFront":RightFrontEncoderStart,
+                        "EncoderPositionCountRightRear":RightBackEncoderStart
+                        }
+    return StartValuesArray
+
+
+
+
+def drive(queue1In,queue2Out):
+    sensorData=dict()
+    
+    
+
     while True:
+        
+
         sensorData=m.readSensors.readAll()
         try:
-            check = calculateDistance(1,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
+            check = calculateDistance(1,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
             if check == False:
                 print("STOP")
                 exit()
@@ -158,8 +174,7 @@ def tryStuff():
     try:
         atexit.register(exitHandler)
         pingThread()
-        m.emergency_stop_release()
-        drive(1)      
+            
         # turnRobot(3.14)
         # nextmove= getNextMove()   
     finally:
@@ -169,10 +184,23 @@ def tryStuff():
 
 if __name__ == "__main__":
     print("STARTING PROGRAM")
-    # queue1In = Queue() # put the json data you get from the API in this queue
-    # queue2Out = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+    encoderStartValues=getStartEncoderPositions()
 
-    # readDataThread = Thread(target=readData, args=(queue1In, queue2Out))
+    queue1In = Queue() # put the json data you get from the API in this queue
+    queue2Out = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+
+    queue1In.put(encoderStartValues)
+
+    readDataThreadA = Thread(target=drive, args=(queue1In, queue2Out))
+    readDataThreadB = Thread(target=drive, args=(queue1In, queue2Out))
+    readDataThreadC = Thread(target=drive, args=(queue1In, queue2Out))
+    
+    
+    m.go_forward(100,10)
+    queue1In.put(True)
+    queue1In.put(1)
+
+    
     # readDataThread.start() 
 
     # t2 = Thread(target=modify_variable, args=(queue2, queue1))
