@@ -20,8 +20,8 @@ class GeneralControls:
         # if data_send != len(data):
         #     raise RuntimeError
         self.client_socket.sendall(data)
-        print(cmd)
-        time.sleep(1.0/self.send_freq)
+        # print(cmd)
+        # time.sleep(1.0/self.send_freq)
 
     def close_connection(self):
         self.client_socket.close()

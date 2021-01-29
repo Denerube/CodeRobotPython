@@ -30,14 +30,7 @@ WheelCirc=0.27*math.pi
 # //van 1 - x voor volgorde -> orderNr
 
 def calculateDistance(target,beginData,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
-    # self.sensorValues["EncoderPositionCountLeft"+p]=values[0]
-    # self.sensorValues["EncoderPositionCountRight"+p]=values[1]
-    # UNDER THIS is an example of the begindata you recieve
-    #  StartValuesArray ={ "EncoderPositionCountLeftFront" : leftFrontEncoderStart,
-    #                     "EncoderPositionCountLeftRear" : leftBackEncoderStart,
-    #                     "EncoderPositionCountRightFront":RightFrontEncoderStart,
-    #                     "EncoderPositionCountRightRear":RightBackEncoderStart
-    #                     }
+  
     leftFrontEncoderStart=beginData["EncoderPositionCountLeftFront"]
     leftBackEncoderStart=beginData["EncoderPositionCountLeftRear"]
     RightFrontEncoderStart=beginData["EncoderPositionCountRightFront"]
@@ -51,20 +44,13 @@ def calculateDistance(target,beginData,LeftFrontencoderAbs,leftBackEncoderAbs,Ri
     RightDifferenceBack=float(RightBackEncoderAbs)-float(RightBackEncoderStart)
 
     
-    leftDistanceTravelledFront=leftDifferenceFront  * WheelCirc /380
-    leftDistanceTravelledBack=leftDifferenceBack  * WheelCirc /380
-    RightDistanceTravelledFront =RightDifferenceFront  * WheelCirc /380
-    RightDistanceTraveledBack=RightDifferenceBack  * WheelCirc /380
+    leftDistanceTravelledFront=leftDifferenceFront  * WheelCirc /310
+    leftDistanceTravelledBack=leftDifferenceBack  * WheelCirc /310
+    RightDistanceTravelledFront =RightDifferenceFront  * WheelCirc /310
+    RightDistanceTraveledBack=RightDifferenceBack  * WheelCirc /310
 
+    return leftDistanceTravelledBack
 
-
-    if (leftDistanceTravelledBack >= 1):
-        # m.stop()
-        print("LEFT" + str(leftDistanceTravelledFront) + " BACK, " +str(leftDistanceTravelledBack))
-        print("RIGHT" + str(RightDistanceTravelledFront) +" BACK, " + str(RightDistanceTraveledBack))
-        return False
-    else:
-        return True
 
 
 def writeToJsonFile(data):
@@ -81,21 +67,16 @@ def ReadFromJsonFile():
 
 def exitHandler():
     print("emergency stop")
+    print("closing program")
     m.emergency_stop()
     m.close_connection()
-    print("closing program")
-    
-            
-def pingThread():
-    t=threading.Timer(0.5, pingThread)
-    t.start()
-    m.generalControls.ping()
-
+   
 def turnRobot (target):
     m.generalControls.send_cmd("SYS CAL")
     sensorData = m.readSensors.readAll()
     start = sensorData["YAW"]
     yaw = start
+    m.emergency_stop_release()
     m.turn_left(200,0)
     target -= 0.1
 
@@ -103,9 +84,9 @@ def turnRobot (target):
         try:     
             sensorData = m.readSensors.readAll()
             yaw = sensorData["YAW"]
-            print ("YAW: " + str(yaw))
+            # print ("YAW: " + str(yaw))
         except(KeyError):
-            print("keyerror")
+            pass #print("keyerror")
 
     print("STOPPING")
     m.stop()
@@ -130,6 +111,7 @@ def getNextMove():
         return data
 
 def getStartEncoderPositions():
+    print("getting start values")
     
     for x in range(1000):
         sensorData=m.readSensors.readAll()
@@ -139,43 +121,83 @@ def getStartEncoderPositions():
             RightFrontEncoderStart=float(sensorData["EncoderPositionCountRightFront"])
             RightBackEncoderStart=float(sensorData["EncoderPositionCountRightRear"])
             # print("DONE?")
-        except(KeyError):
-            print("KEYERROR BIJ INIT")
+        except(KeyError,ValueError):
+            pass# print("KEYERROR BIJ INIT")
     StartValuesArray ={ "EncoderPositionCountLeftFront" : leftFrontEncoderStart,
                         "EncoderPositionCountLeftRear" : leftBackEncoderStart,
                         "EncoderPositionCountRightFront":RightFrontEncoderStart,
                         "EncoderPositionCountRightRear":RightBackEncoderStart
                         }
+    print("start values done")
     return StartValuesArray
 
+def readDataPutInQue(queueIn:Queue,queueOut:Queue,runThreads:threading.Event):
+    while runThreads.is_set():
+        # print("executed function")
+        try:
+            sensorData=m.readSensors.readAll()
+            # print(sensorData["MotorDriverBoardPowerMainFront"])
+            queueOut.put(sensorData)
+        except(ValueError):
+            pass
 
-
-
-def drive(queue1In:Queue,queue2Out:Queue):
+def drive(queueIn:Queue,QueueOther:Queue,pingThread,runPingThread,runDriveInStraightLine:threading.Event):
+    print("start drive")
+    index=0
+    isFirst=True
     sensorData=dict()
     begindata=dict()
-    doCalc= False
-    TargetDistance=1
+    
 
-    while True:
-        if not queue1In.empty:
-            # get data and do calc
-            var = queue1In.get()
-            doCalc=True
-            begindata=var["encoderStartValues"]
-            TargetDistance=var["TargetDistance"]
+    while 1:
+        
 
-        sensorData=m.readSensors.readAll()
-        if doCalc:
+        sensorData=queueIn.get()
+        if isFirst:
+            print("BEGINSENSORLEFTFRONT {0}".format(sensorData["EncoderPositionCountLeftFront"]))
+            isFirst=False
+
+        if  runDriveInStraightLine.is_set():
+            if (index ==0):
+                print("should drive after this?")
+                startData=queueOtherData.get()    
+                beginData=startData["encoderStartValues"]
+                TargetDistance=startData["TargetDistance"]-0.05
+                index +=1
+                print("TARGET {0}".format(TargetDistance))
+                m.emergency_stop_release()
+                m.go_forward(100,10)
+                # sleep(0.4)
+                pingThread.start()
             try:
-                check = calculateDistance(TargetDistance,begindata,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
-                if check == False:
+                if TargetDistance <= calculateDistance(TargetDistance,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"]):
+                    m.stop()
                     print("STOP")
-                    doCalc=False
-                    exit()
-            except(KeyError):
-                print("keyerror in main")
-                pass
+                    index=0
+                    sleep(2)
+                    sensorData=queueIn.get()
+                    print("ENDSENSORLEFTFRONT {0}".format(sensorData["EncoderPositionCountLeftFront"]))
+                    DistanceTravelled=calculateDistance(TargetDistance,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"])
+                    print(DistanceTravelled)
+                    runPingThread.clear()
+                    pingThread.join()
+                    runDriveInStraightLine.clear()
+                        
+                        
+                    
+            except():
+                print("error in drive function")
+        else:
+            pass #print("no data?")
+
+            
+            
+
+
+def pingThread(queueOtherData:Queue,runThreads:threading.Event,runPingthread:threading.Event):
+    while runThreads.is_set() and runPingthread.is_set():
+        m.generalControls.ping()
+        sleep(0.3)
 
 
 
@@ -183,41 +205,80 @@ def drive(queue1In:Queue,queue2Out:Queue):
 
 if __name__ == "__main__":
     print("STARTING PROGRAM")
+    atexit.register(exitHandler)
     
+    # encoderStartValues=getStartEncoderPositions()
+    queueOtherData =Queue()
+    runThreads= threading.Event()
+    runDriveInStraightLine=threading.Event()
+    runTurnOnTheSpot=threading.Event()
+    runThreads.set()
+    runPingThread=threading.Event()
+    runPingThread.set()
     encoderStartValues=getStartEncoderPositions()
-    queueIn = [Queue(), Queue(), Queue()]
-    queueOut = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
-
-    #readDataThread1 = Thread(target=drive, args=(queueIn[0], queueOut))
-    #readDataThread2 = Thread(target=drive, args=(queueIn[1], queueOut))
-    #readDataThread3 = Thread(target=drive, args=(queueIn[2], queueOut))
-
     startObject= {
-        "encoderStartValues":encoderStartValues,
-        "TargetDistance":1
-    }
+                    "encoderStartValues":encoderStartValues,
+                    "TargetDistance":1
+                            }
 
-    readDataThread = []
+   
+    queueSensorData = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+    pingThread=Thread(target=pingThread,args=(queueOtherData,runThreads,runPingThread))
+    readDataThread = Thread(target=readDataPutInQue, args=(queueOtherData, queueSensorData,runThreads))
+    CalculateDatathread = Thread(target=drive,args=(queueSensorData,queueOtherData,pingThread,runPingThread,runDriveInStraightLine))
+    # drive(queueSensorData,queueOtherData,startObject,pingThread,runPingThread)
+    
 
-    for x in range(0, len(queueIn) - 1):
-        readDataThread.append( Thread(target=drive, args=(queueIn[x], queueOut)))
-        queueIn[x].put(startObject)
-        readDataThread[x].start()
-
-    try:
-        atexit.register(exitHandler)
-        pingThread()
-        m.go_forward(100,10)
-    finally:
-        exitHandler()
-
-        
-
+    
 
 
    
+    
+    # queueIn1.put(startObject)
+    readDataThread.start()
+    sleep(5)
+    CalculateDatathread.start()
+    txtChoice =input("Do you want to get and execute the next command ? (Y/N),press Q to exit inmediatly")
+    txtChoice=txtChoice.upper()
 
-    # nextmove=getNextMove()
+    while txtChoice !="Q": 
+        txtChoice=txtChoice.upper()
+        if txtChoice =="N":
+            print("closing program")
+            runThreads.clear()
+            readDataThread.join()
+            pingThread.join()
+            exit()
+        elif txtChoice =="Q":
+            print("closing program")
+            runThreads.clear()
+            readDataThread.join()
+            pingThread.join()
+            exit()
+        elif txtChoice =="Y":
+            try:
+                queueOtherData.put(startObject)
+                runDriveInStraightLine.set()
+                while runDriveInStraightLine.is_set():
+                    pass
+
+            except (KeyboardInterrupt):
+                print("exitting via keyboard")
+                runThreads.clear()
+                runPingThread.clear()
+                readDataThread.join()
+                pingThread.join()
+                exit()
+            finally:
+                print("DONE with command")
+                exitHandler()
+                txtChoice =input("Do you want to get and execute the next command ? (Y/N)")
+               
+        else:
+            txtChoice =input("invalid input")
+
+
+
 
     
     

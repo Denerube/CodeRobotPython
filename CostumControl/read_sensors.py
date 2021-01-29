@@ -41,7 +41,11 @@ class ReadSensors():
         #sockFile= self.gc.client_socket.makefile()
         message = self.sockFile.readline().rstrip()
         #print(message)
-        self.process(message)
+
+        try:
+            self.process(message)
+        except(IndexError,ValueError):
+            pass
 
         return self.sensorValues
            
@@ -55,7 +59,7 @@ class ReadSensors():
     def process(self, message: AnyStr):
         
         if (message.startswith('#')):
-            pass # self.process_IMU_message(message)
+            self.process_IMU_message(message)
         elif (message.startswith('MM')):
             self.process_motor_message(message)
         elif (message.startswith('$')):
@@ -63,7 +67,7 @@ class ReadSensors():
 
     def process_IMU_message(self, message: AnyStr) -> None:
         # 49,YAW,2.77,GYRO,-3,32,-8,ACC,4,0,252,ADC,1253,400,8,1,
-        print(message)
+        # print(message)
         strTest = message
         strletter = message.find("W")
         if (strTest[strletter+2] == "-"):
