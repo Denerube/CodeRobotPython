@@ -23,8 +23,8 @@ class Controls:
 
     
     def stop(self) -> None:
-        print("stopped")
         self.generalControls.send_cmd("MMW !M 0 0")
+        print("stopped")
        
 
     def go_forward(self,power: int, seconds: int) -> None:
