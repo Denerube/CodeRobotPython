@@ -72,7 +72,7 @@ def exitHandler():
     m.emergency_stop()
     m.close_connection()
    
-def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueCommands:Queue):
+def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueCommands:Queue,CommandoSend:threading.Event):
     turnLeftOrRight =0 # left = 1,right=2
     command= {
         "motorValue":200,
@@ -96,8 +96,9 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     print("startpos {0}".format(start))
     yaw = start
     m.emergency_stop_release()
-   
+    lastYaw = ""
     
+
     # target -= 0.1
 
 
@@ -107,46 +108,68 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
         command["motorValue"]=200
         command["command"]=m.turn_left
         queueCommands.put(command)
+        CommandoSend.set()
         # print("WACHT")
         # print("WACHT")  
         # pingThread.start()
+        sleep(1)
         while yawdiff(start, yaw) > target:
-            try:     
+            try:
                 sensorData = m.readSensors.readAll()
                 yaw = sensorData["YAW"]
-                print ("YAW: " + str(yaw))
+                if (start == yaw):
+                    print("HIJ HEEFT NIET BEWOGEN")
+                    command["motorValue"]=200
+                    command["command"]=m.turn_left
+                    queueCommands.put(command)
+                    CommandoSend.set()
+                    sleep(1)
             except(KeyError):
                 print("keyerror during turning")
+                
     elif turnLeftOrRight ==2:
         runPintThread.set()
         # m.turn_right(200,0)
         command["motorValue"]=200
         command["command"]=m.turn_right
         queueCommands.put(command)
+        CommandoSend.set()
         # print("WACHT")
         # print("WACHT")
         # pingThread.start()      
+        sleep(1)
         while yawdiff(start, yaw) < target:
             try:     
                 sensorData = m.readSensors.readAll()
                 yaw = sensorData["YAW"]
-                print ("YAW: " + str(yaw))
+                if (start == yaw):
+                    print("hij heeft niet bewogen")
+                    command["motorValue"]=200
+                    command["command"]=m.turn_right
+                    queueCommands.put(command)
+                    CommandoSend.set()
+                    sleep(1)
+               
+                
+                
             except(KeyError):
                 print("keyerror during turning")
+                
 
             
 
     print("STOPPING")
-    m.stop()
-    runPintThread.clear()
-    pingThread.join()
+    CommandoSend.clear()
+    m.emergency_stop()
+    # runPintThread.clear()
+    # pingThread.join()
 
 def yawdiff(start, yaw):
     if(start > 0 and yaw < 0):
-        print("return 1: {0}".format(yaw + 2* 3.14))
+        # print("return 1: {0}".format(yaw + 2* 3.14))
         return (yaw + 2* 3.14) - start
     else:
-        print("return 2: {0}".format(yaw-start))
+        # print("return 2: {0}".format(yaw-start))
         return yaw-start
 
 def getNextMove():
@@ -193,7 +216,7 @@ def readDataPutInQue(queueIn:Queue,queueOut:Queue,runThreads:threading.Event):
         except(ValueError):
             pass
 
-def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingThread,runDriveInStraightLine:threading.Event,runThreads:threading.Event):
+def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingThread,runDriveInStraightLine:threading.Event,runThreads:threading.Event,CommandoSend:threading.Event):
     print("start drive")
     index=0
     sensorData=dict()
@@ -217,12 +240,11 @@ def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingT
                 beginData=startData["encoderStartValues"]
                 TargetDistance=startData["TargetDistance"]-0.05
                 index +=1
-                
-                # runPingThread.set()
-                # m.go_forward(100,10)
                 command["motorValue"]=100
                 command["command"]=m.go_forward
+                m.emergency_stop_release()
                 queueCommands.put(command)
+                CommandoSend.set()
 
                 # pingThread.start()
             try:
@@ -231,7 +253,7 @@ def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingT
                     print("STOP")
                     index=0
                     sleep(2)
-                    runPingThread.clear()
+                    # runPingThread.clear()
                     # pingThread.join()
                     runDriveInStraightLine.clear()
     
@@ -249,27 +271,36 @@ def pingThread(queueOtherData:Queue,runThreads:threading.Event,runPingthread:thr
         m.generalControls.ping()
         sleep(0.3)
 
-def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event):
+def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event,CommandoSend:threading.Event):
 
     # example of the command you get back
     # command= {
     #     "motorValue":200,
     #     "command": m.turn_left
     # }
-    
+
+    tping=round(time.time()*10,2)
     while runThreads.is_set():
-        t=datetime.now()
-        if not queueCommands.empty():
-            command = commandQueue.get()
-            tping=datetime.now()
-            commandparam=command["motorValue"]
-            commandFunction=command["command"]
-            m.emergency_stop_release()
-            commandFunction(commandparam,0)
-        elif (tping.second -t.second < 0.04):
-            m.generalControls.ping()
-        tping=datetime.now()
-        sleep(0.1)
+        try:
+            t=round(time.time()*10,2)
+            if CommandoSend.is_set():
+                command = commandQueue.get()
+                # print("executing command: {0}".format(command))
+                tping=round(time.time()*10,2)
+                commandparam=command["motorValue"]
+                commandFunction=command["command"]
+                # m.emergency_stop_release()
+                commandFunction(commandparam,0)
+                CommandoSend.clear()
+                sleep(0.3)
+            elif (round(t-tping,2) >= 0.45):
+                # print(t-tping)
+                m.generalControls.ping()
+                tping=round(time.time()*10,2)
+        except:
+            print("PING ERROR?")
+
+       
 
 
 
@@ -284,6 +315,7 @@ if __name__ == "__main__":
     runDriveInStraightLine=threading.Event()
     runThreads.set()
     runPingThread=threading.Event()
+    CommandoSend=threading.Event()
     # runPingThread.set()
     # encoderStartValues=getStartEncoderPositions()
     startObject= {
@@ -297,8 +329,8 @@ if __name__ == "__main__":
     queueCommands=Queue()
     pingThread=Thread(target=pingThread,args=(queueOtherData,runThreads,runPingThread))
     readDataThread = Thread(target=readDataPutInQue, args=(queueOtherData, queueSensorData,runThreads))
-    CalculateDatathread = Thread(target=drive,args=(queueSensorData,queueCommands,pingThread,runPingThread,runDriveInStraightLine,runThreads))
-    CommandThread=Thread(target=CommandThreadFunction,args=(queueCommands,runThreads))
+    CalculateDatathread = Thread(target=drive,args=(queueSensorData,queueOtherData,queueCommands,pingThread,runPingThread,runDriveInStraightLine,runThreads,CommandoSend))
+    CommandThread=Thread(target=CommandThreadFunction,args=(queueCommands,runThreads,CommandoSend))
     readDataThread.start()
     sleep(5)
     CalculateDatathread.start()
@@ -328,30 +360,31 @@ if __name__ == "__main__":
             if turnOrDriveStraigh == 2:
                 
                 try:
-                    turnRobot(3.14/2,pingThread,runPingThread,queueCommands)
-                    pingThread.start()
+                    turnRobot(-3.14/2,pingThread,runPingThread,queueCommands,CommandoSend)
+                    # pingThread.start()
 
                 except (KeyboardInterrupt):
                     print("exitting via keyboard")
                     runThreads.clear()
                     runPingThread.clear()
                     readDataThread.join()
-                    pingThread.join()
+                    # pingThread.join()
                     exit()
                 finally:
                     print("DONE with turn command")
-                    runPingThread.clear()
-                    pingThread.join()
+                    # runPingThread.clear()
+                    # pingThread.join()
                     txtChoice =input("Do you want to go straight or skip command? (Y/N)")
                     txtChoice = txtChoice.upper()
                     if txtChoice == "Y":
-                        turnOrDriveStraigh =1
+                        turnOrDriveStraigh =2
                         txtChoice=""
                     elif txtChoice =="Q":
                         print("closing program")
                         runThreads.clear()
                         readDataThread.join()
                         CalculateDatathread.join()
+
                         # pingThread.join()
                         exit()
                     else:
