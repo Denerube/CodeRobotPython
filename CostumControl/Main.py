@@ -11,6 +11,7 @@ import json
 import requests
 from move_controls import Controls
 from general_controls import GeneralControls
+from datetime import datetime
 
 m=Controls()
 sensorData=dict()
@@ -19,7 +20,7 @@ currentHeading="N"
 url="https://ai-4x4-api.herokuapp.com/plsSendNext"
 lastMoveID=0
 moveCommand = { "OrderNr" : 0 , "Direction" : "", "Afstand" : 0 }
-JsonFileName="data.txt"
+JsonFileName="data.json"
 WheelCirc=0.27*math.pi
 # leftFrontEncoderStart = 0
 # leftBackEncoderStart =0
@@ -71,8 +72,12 @@ def exitHandler():
     m.emergency_stop()
     m.close_connection()
    
-def turnRobot (target,pingThread:Thread,runPintThread:threading.Event):
+def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueCommands:Queue):
     turnLeftOrRight =0 # left = 1,right=2
+    command= {
+        "motorValue":200,
+        "command": "null"
+    }
     if (target > 0):
         target -=0.1
         turnLeftOrRight =2
@@ -98,10 +103,13 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event):
 
     if turnLeftOrRight ==1:
         runPintThread.set()
-        m.turn_left(200,0)
-        print("WACHT")
-        print("WACHT")  
-        pingThread.start()
+        # m.turn_left(200,0)
+        command["motorValue"]=200
+        command["command"]=m.turn_left
+        queueCommands.put(command)
+        # print("WACHT")
+        # print("WACHT")  
+        # pingThread.start()
         while yawdiff(start, yaw) > target:
             try:     
                 sensorData = m.readSensors.readAll()
@@ -111,10 +119,13 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event):
                 print("keyerror during turning")
     elif turnLeftOrRight ==2:
         runPintThread.set()
-        m.turn_right(200,0)
-        print("WACHT")
-        print("WACHT")
-        pingThread.start()      
+        # m.turn_right(200,0)
+        command["motorValue"]=200
+        command["command"]=m.turn_right
+        queueCommands.put(command)
+        # print("WACHT")
+        # print("WACHT")
+        # pingThread.start()      
         while yawdiff(start, yaw) < target:
             try:     
                 sensorData = m.readSensors.readAll()
@@ -182,11 +193,18 @@ def readDataPutInQue(queueIn:Queue,queueOut:Queue,runThreads:threading.Event):
         except(ValueError):
             pass
 
-def drive(queueIn:Queue,QueueOther:Queue,pingThread,runPingThread,runDriveInStraightLine:threading.Event,runThreads:threading.Event):
+def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingThread,runDriveInStraightLine:threading.Event,runThreads:threading.Event):
     print("start drive")
     index=0
     sensorData=dict()
     begindata=dict()
+    
+    # example of the command you get back
+    command= {
+        "motorValue":200,
+        "command": "null"
+    }
+    
     
 
     while runThreads.is_set():
@@ -199,10 +217,14 @@ def drive(queueIn:Queue,QueueOther:Queue,pingThread,runPingThread,runDriveInStra
                 beginData=startData["encoderStartValues"]
                 TargetDistance=startData["TargetDistance"]-0.05
                 index +=1
-                m.emergency_stop_release()
-                runPingThread.set()
-                m.go_forward(100,10)
-                pingThread.start()
+                
+                # runPingThread.set()
+                # m.go_forward(100,10)
+                command["motorValue"]=100
+                command["command"]=m.go_forward
+                queueCommands.put(command)
+
+                # pingThread.start()
             try:
                 if TargetDistance <= calculateDistance(TargetDistance,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"]):
                     m.stop()
@@ -210,7 +232,7 @@ def drive(queueIn:Queue,QueueOther:Queue,pingThread,runPingThread,runDriveInStra
                     index=0
                     sleep(2)
                     runPingThread.clear()
-                    pingThread.join()
+                    # pingThread.join()
                     runDriveInStraightLine.clear()
     
             except():
@@ -227,6 +249,27 @@ def pingThread(queueOtherData:Queue,runThreads:threading.Event,runPingthread:thr
         m.generalControls.ping()
         sleep(0.3)
 
+def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event):
+
+    # example of the command you get back
+    # command= {
+    #     "motorValue":200,
+    #     "command": m.turn_left
+    # }
+    
+    while runThreads.is_set():
+        t=datetime.now()
+        if not queueCommands.empty():
+            command = commandQueue.get()
+            tping=datetime.now()
+            commandparam=command["motorValue"]
+            commandFunction=command["command"]
+            m.emergency_stop_release()
+            commandFunction(commandparam,0)
+        elif (tping.second -t.second < 0.04):
+            m.generalControls.ping()
+        tping=datetime.now()
+        sleep(0.1)
 
 
 
@@ -251,15 +294,16 @@ if __name__ == "__main__":
 
    
     queueSensorData = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+    queueCommands=Queue()
     pingThread=Thread(target=pingThread,args=(queueOtherData,runThreads,runPingThread))
     readDataThread = Thread(target=readDataPutInQue, args=(queueOtherData, queueSensorData,runThreads))
-    CalculateDatathread = Thread(target=drive,args=(queueSensorData,queueOtherData,pingThread,runPingThread,runDriveInStraightLine,runThreads))
-    # drive(queueSensorData,queueOtherData,startObject,pingThread,runPingThread)
-    # queueIn1.put(startObject)
+    CalculateDatathread = Thread(target=drive,args=(queueSensorData,queueCommands,pingThread,runPingThread,runDriveInStraightLine,runThreads))
+    CommandThread=Thread(target=CommandThreadFunction,args=(queueCommands,runThreads))
     readDataThread.start()
     sleep(5)
     CalculateDatathread.start()
     txtChoice=""
+    CommandThread.start()
     while txtChoice !="Q": 
         txtChoice =input("Do you want to get and execute the next command ? (Y/N),press Q to exit inmediatly")
         txtChoice=txtChoice.upper()
@@ -284,7 +328,7 @@ if __name__ == "__main__":
             if turnOrDriveStraigh == 2:
                 
                 try:
-                    turnRobot(3.14/2,pingThread,runPingThread)
+                    turnRobot(3.14/2,pingThread,runPingThread,queueCommands)
                     pingThread.start()
 
                 except (KeyboardInterrupt):
