@@ -431,8 +431,10 @@ if __name__ == "__main__":
                     print("DONE with turn command")
                     # runPingThread.clear()
                     # pingThread.join()
-                    txtChoice =input("Do you want to go straight or skip command? (Y/N)")
+                    txtChoice =input("Do you want to go straight or skip command,or redo command (Y/N/R)")
                     txtChoice = txtChoice.upper()
+                    if txtChoice =="R":
+                        turnOrDriveStraigh =2
                     if txtChoice == "Y":
                         turnOrDriveStraigh =1
                         txtChoice=""
@@ -468,7 +470,11 @@ if __name__ == "__main__":
                 finally:
                     print("DONE with command")
                     runDriveInStraightLine.clear()
-                    txtChoice =input("Do you want to get and execute the next command ? (Y/N)")        
+                    lastCommandId +=1
+                    WriteLastCommandIdToFile(lastCommandId)
+                    txtChoice =input("Do you want to get and execute the next command ? (Y/N)")   
+                    txtChoice=txtChoice.upper()
+                         
         else:
             txtChoice =input("invalid input")
 
