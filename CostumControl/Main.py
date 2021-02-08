@@ -338,6 +338,7 @@ def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event,Commando
 
 if __name__ == "__main__":
     sensorData = m.readSensors.readAll()
+    m.generalControls.send_cmd("SYS CAL")
     for i in range(1000):
         sensorData = m.readSensors.readAll()
     currentyaw = sensorData["YAW"]
@@ -385,6 +386,7 @@ if __name__ == "__main__":
             timesRun +=1
             print("last command executed: {0}".format(commands[lastCommandId-1]))
             txtrepeat=input("do you want to repeat this command?")
+            txtrepeat=txtrepeat.upper()
             if txtrepeat =="Y":
                 commandToExecute=commandToExecute
             elif txtrepeat =="N":
