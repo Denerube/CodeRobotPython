@@ -377,7 +377,7 @@ if __name__ == "__main__":
             WriteLastCommandIdToFile(lastCommandId)
             exit()
 
-        txtChoice =input("Do you want to get and execute the next command ? (Y/N),press Q to exit inmediatly")
+        txtChoice =input("Do you want to  execute the  command and start the program ? (Y/N),press Q to exit inmediatly")
         
         txtChoice=txtChoice.upper()
 
@@ -425,15 +425,16 @@ if __name__ == "__main__":
                 except (KeyboardInterrupt):
                     print("exitting via keyboard")
                     runThreads.clear()
-                    runPingThread.clear()
                     readDataThread.join()
+                    CalculateDatathread.join()
+                    CommandThread.join()
                     # pingThread.join()
                     exit()
                 finally:
                     print("DONE with turn command")
                     # runPingThread.clear()
                     # pingThread.join()
-                    txtChoice =input("Do you want to go straight or skip command,or redo command (Y/N/R)")
+                    txtChoice =input("Do you want to go straight for {0}m or skip command,or redo command Y=yes, R=Redo,Q=Stop program, anything else= skip going straight".format(commandToExecute["Afstand"]))
                     txtChoice = txtChoice.upper()
                     if txtChoice =="R":
                         turnOrDriveStraigh =2
@@ -441,13 +442,7 @@ if __name__ == "__main__":
                         turnOrDriveStraigh =1
                         txtChoice=""
                     elif txtChoice =="Q":
-                        print("closing program")
-                        runThreads.clear()
-                        readDataThread.join()
-                        CalculateDatathread.join()
-
-                        # pingThread.join()
-                        exit()
+                        txtChoice =="Q"
                     else:
                         turnOrDriveStraigh =0
                         txtChoice=""
@@ -465,9 +460,9 @@ if __name__ == "__main__":
                 except (KeyboardInterrupt):
                     print("exitting via keyboard")
                     runThreads.clear()
-                    runPingThread.clear()
                     readDataThread.join()
-                    pingThread.join()
+                    CalculateDatathread.join()
+                    CommandThread.join()
                     exit()
                 finally:
                     print("DONE with command")
@@ -479,6 +474,14 @@ if __name__ == "__main__":
                          
         else:
             txtChoice =input("invalid input")
+
+    print("closing program")
+    runThreads.clear()
+    readDataThread.join()
+    CalculateDatathread.join()
+    CommandThread.join()
+    # pingThread.join()
+    exit()
 
 
 
