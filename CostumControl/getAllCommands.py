@@ -15,8 +15,20 @@ from datetime import datetime
 
 
 JsonFileName="jsonData.json"
+lastPositionFile="LastPos.txt"
 
 commandArray=[]
+
+def WritePositionToTextfile(lastPos):
+    with open(lastPositionFile,'w') as text_file:
+        text_file.write(str(lastPositionFile))
+
+
+def readLastCommandIdFromFile():
+    with open(lastPositionFile) as text_file:
+        dataLastCmdId= text_file.read()
+    return lastPositionFile
+
 
 
 def getNextMove():
@@ -39,14 +51,16 @@ def ReadFromJsonFile():
     return data
 
 def getAllMoves():
-    data = getNextMove()
-    commandArray.append(data)
-    while 1:
-        data = getNextMove()
-        commandArray.append(data)
-        if "End" in data.keys():
-            break
-    writeToJsonFile(commandArray)
+    data=getNextMove()
+
+    # data = getNextMove()
+    # commandArray.append(data)
+    # while 1:
+    #     data = getNextMove()
+    #     commandArray.append(data)
+    #     if "End" in data.keys():
+    #         break
+    writeToJsonFile(data)
 
 if __name__ == "__main__":
     getAllMoves()

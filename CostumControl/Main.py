@@ -27,6 +27,8 @@ lastCommandId= 0
 lastCommandIdfile="txtLastCmd.txt"
 currentyaw = 0
 vakGrootte=1
+
+
 # leftFrontEncoderStart = 0
 # leftBackEncoderStart =0
 # RightFrontEncoderStart =0
@@ -281,21 +283,35 @@ def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingT
                 TargetDistance=(startData["TargetDistance"]*vakGrootte)-0.05
                 index +=1
                 command["motorValue"]=100
-                command["command"]=m.go_forward
+                if startObject["Back"]==1:
+                    command["command"]=m.go_backward
+                else:
+                    command["command"]=m.go_forward
                 m.emergency_stop_release()
                 queueCommands.put(command)
                 CommandoSend.set()
 
                 # pingThread.start()
             try:
-                if TargetDistance <= calculateDistance(TargetDistance,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"]):
-                    m.stop()
-                    print("STOP")
-                    index=0
-                    sleep(2)
-                    # runPingThread.clear()
-                    # pingThread.join()
-                    runDriveInStraightLine.clear()
+                if startObject["Back"]==1:
+
+                    if -TargetDistance >= calculateDistance(TargetDistance,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"]):
+                        m.stop()
+                        print("STOP")
+                        index=0
+                        sleep(2)
+                        # runPingThread.clear()
+                        # pingThread.join()
+                        runDriveInStraightLine.clear()
+                else:
+                    if TargetDistance <= calculateDistance(TargetDistance,beginData,sensorData["EncoderPositionCountLeftFront"],sensorData["EncoderPositionCountLeftRear"],sensorData["EncoderPositionCountRightFront"],sensorData["EncoderPositionCountRightRear"]):
+                        m.stop()
+                        print("STOP")
+                        index=0
+                        sleep(2)
+                        # runPingThread.clear()
+                        # pingThread.join()
+                        runDriveInStraightLine.clear()
     
             except():
                 print("error in drive function")
@@ -365,7 +381,8 @@ if __name__ == "__main__":
     # encoderStartValues=getStartEncoderPositions()
     startObject= {
                     "encoderStartValues":"",
-                    "TargetDistance":1
+                    "TargetDistance":1,
+                    "Back":0
                     
                             }
 
@@ -383,6 +400,7 @@ if __name__ == "__main__":
     CommandThread.start()
     commands=ReadFromJsonFile()
     timesRun=0
+    goBack= False
     
     while txtChoice !="Q":
         if lastCommandId == -1:
@@ -440,21 +458,23 @@ if __name__ == "__main__":
            
             
             turnOrDriveStraigh:int #0= nothing, 1= drive straight,2=turn
-            if commandToExecute["Direction"] != "North":
-                turnOrDriveStraigh =2
-            else:
+            if commandToExecute["Direction"] == "F":
                 turnOrDriveStraigh =1
+            elif commandToExecute["Direction"] =="B":
+                turnOrDriveStraigh =1
+                goBack= True
+            else:
+                turnOrDriveStraigh =2
             
             # turnOrDriveStraigh=2
             # when turning
             if turnOrDriveStraigh == 2:
                 turnDirection =""
-                if commandToExecute["Direction"] =="East":
+                if commandToExecute["Direction"] =="R":
                     turnDirection=3.14/2
-                elif commandToExecute["Direction"] =="West":
+                elif commandToExecute["Direction"] =="L":
                     turnDirection= -3.14/2
-                elif commandToExecute["Direction"] =="South":
-                    turnDirection =3.14
+                   
                 
                 try:
                     checkTurn = turnRobot(turnDirection,pingThread,runPingThread,queueCommands,CommandoSend)
@@ -489,9 +509,15 @@ if __name__ == "__main__":
             if turnOrDriveStraigh ==1:
             # when driving straigt
                 try:
+
                     encoderStartValues=getStartEncoderPositions()
                     startObject["encoderStartValues"]=encoderStartValues
                     startObject["TargetDistance"]=commandToExecute["Afstand"]
+                    startObject["Back"]=0 #0-> don't go back, 1-> go back
+                    if goBack:
+                        startObject["Back"]=1
+                    else:
+                        startObject["Back"]=0
                     queueOtherData.put(startObject)
                     runDriveInStraightLine.set()
                     while runDriveInStraightLine.is_set():
