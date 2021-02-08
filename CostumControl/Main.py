@@ -22,6 +22,9 @@ lastMoveID=0
 moveCommand = { "OrderNr" : 0 , "Direction" : "", "Afstand" : 0 }
 JsonFileName="data.json"
 WheelCirc=0.27*math.pi
+commandArray=[]
+lastCommandId= 0
+lastCommandIdfile="txtLastCmd.txt"
 # leftFrontEncoderStart = 0
 # leftBackEncoderStart =0
 # RightFrontEncoderStart =0
@@ -29,6 +32,19 @@ WheelCirc=0.27*math.pi
 
 
 # //van 1 - x voor volgorde -> orderNr
+
+
+def WriteLastCommandIdToFile(cmdId):
+    with open(lastCommandIdfile,'w') as text_file:
+        text_file.write(str(cmdId))
+
+def readLastCommandIdFromFile():
+    dataLastCmdId=-1
+    with open(lastCommandIdfile) as text_file:
+        dataLastCmdId= text_file.read()
+    return int(dataLastCmdId)
+
+
 
 def calculateDistance(target,beginData,LeftFrontencoderAbs,leftBackEncoderAbs,RightFrontencoderAbs,RightBackEncoderAbs):
   
@@ -177,13 +193,22 @@ def getNextMove():
     x=requests.get(url)
     data=x.json()
     print(data)
-    writeToJsonFile(data)
-    if "End" in data.keys() :
-        print("END")
-        return False
-    else:
-        print(data)
-        return data
+    # writeToJsonFile(data)
+    return data
+
+def getAllMoves():
+    data = getNextMove()
+    commandArray.append(data)
+    while 1:
+        data = getNextMove()
+        commandArray.append(data)
+        if "End" in data.keys():
+            break
+    writeToJsonFile(commandArray)
+
+    
+
+    
 
 def getStartEncoderPositions():
     print("getting start values")
@@ -336,9 +361,26 @@ if __name__ == "__main__":
     CalculateDatathread.start()
     txtChoice=""
     CommandThread.start()
-    while txtChoice !="Q": 
+    commands=ReadFromJsonFile()
+    
+    while txtChoice !="Q":
+        if lastCommandId == -1:
+            print("stopping program")
+            exit()
+        lastCommandId=readLastCommandIdFromFile()
+        commandToExecute=commands[lastCommandId-1]
+        print("executing: {0}".format(commandToExecute))
+        if ("End" in commandToExecute.keys()):
+            print("reached the end")
+            lastCommandId =-1
+            exit()
+
         txtChoice =input("Do you want to get and execute the next command ? (Y/N),press Q to exit inmediatly")
+        
         txtChoice=txtChoice.upper()
+
+
+
         if txtChoice =="N":
             print("closing program")
             runThreads.clear()
@@ -354,13 +396,28 @@ if __name__ == "__main__":
             exit()
         elif txtChoice =="Y":
             # check if turning or straight line
+            WriteLastCommandIdToFile(lastCommandId)
+           
+            
             turnOrDriveStraigh:int #0= nothing, 1= drive straight,2=turn
-            turnOrDriveStraigh=2
+            if commandToExecute["Direction"] != "North":
+                turnOrDriveStraigh =2
+            else:
+                turnOrDriveStraigh =1
+            
+            # turnOrDriveStraigh=2
             # when turning
             if turnOrDriveStraigh == 2:
+                turnDirection =""
+                if commandToExecute["Direction"] =="East":
+                    turnDirection=3.14/2
+                elif commandToExecute["Direction"] =="West":
+                    turnDirection= -3.14/2
+                elif commandToExecute["Direction"] =="South":
+                    turnDirection =3.14
                 
                 try:
-                    turnRobot(-3.14/2,pingThread,runPingThread,queueCommands,CommandoSend)
+                    turnRobot(turnDirection,pingThread,runPingThread,queueCommands,CommandoSend)
                     # pingThread.start()
 
                 except (KeyboardInterrupt):
@@ -377,7 +434,7 @@ if __name__ == "__main__":
                     txtChoice =input("Do you want to go straight or skip command? (Y/N)")
                     txtChoice = txtChoice.upper()
                     if txtChoice == "Y":
-                        turnOrDriveStraigh =2
+                        turnOrDriveStraigh =1
                         txtChoice=""
                     elif txtChoice =="Q":
                         print("closing program")
@@ -395,7 +452,7 @@ if __name__ == "__main__":
                 try:
                     encoderStartValues=getStartEncoderPositions()
                     startObject["encoderStartValues"]=encoderStartValues
-                    startObject["TargetDistance"]=1
+                    startObject["TargetDistance"]=commandToExecute["Afstand"]
                     queueOtherData.put(startObject)
                     runDriveInStraightLine.set()
                     while runDriveInStraightLine.is_set():
