@@ -401,6 +401,8 @@ if __name__ == "__main__":
     commands=ReadFromJsonFile()
     timesRun=0
     goBack= False
+    lastCommand= False
+    amountOfCommands=len(commands)
     
     while txtChoice !="Q":
         if lastCommandId == -1:
@@ -429,6 +431,9 @@ if __name__ == "__main__":
             lastCommandId =1
             WriteLastCommandIdToFile(lastCommandId)
             exit()
+        
+        if lastCommandId -1 == amountOfCommands -1:
+            lastCommand==True
 
         txtChoice =input("Do you want to  execute the  command and start the program ? (Y/N),press Q to exit inmediatly")
         
@@ -504,7 +509,9 @@ if __name__ == "__main__":
                     print("DONE with turn command")
                     # runPingThread.clear()
                     # pingThread.join()
-                   
+
+            if lastCommand:
+                turnOrDriveStraigh = -1      
                     
             if turnOrDriveStraigh ==1:
             # when driving straigt
