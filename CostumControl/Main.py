@@ -184,12 +184,13 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
         newYaw = currentyaw + 2*3.14
     elif newYaw > 3.14:
         newYaw = currentyaw - 2*3.14
-    marge = 0.02
-    if !(newData["YAW"]> newYaw - marge || newData["YAW"] < newYaw + marge):
+    marge = 0.1
+    print ("newdata yaw {0} VS new yaw {1} marge {2}".format(newData["YAW"],newYaw,marge))
+    if  (newData["YAW"]> newYaw - marge and newData["YAW"] < newYaw + marge):
         currentyaw = newYaw
-        return true
+        return True
     else :
-        return false
+        return False
     # runPintThread.clear()
     # pingThread.join()
 
@@ -428,6 +429,8 @@ if __name__ == "__main__":
             runThreads.clear()
             readDataThread.join()
             CalculateDatathread.join()
+            lastCommandId =1
+            WriteLastCommandIdToFile(lastCommandId)
             # pingThread.join()
             exit()
         elif txtChoice =="Y":
@@ -453,7 +456,19 @@ if __name__ == "__main__":
                     turnDirection =3.14
                 
                 try:
-                    turnRobot(turnDirection,pingThread,runPingThread,queueCommands,CommandoSend)
+                    checkTurn = turnRobot(turnDirection,pingThread,runPingThread,queueCommands,CommandoSend)
+                    if checkTurn:
+                        turnOrDriveStraigh =1
+                        pass
+                    
+                    else:
+                        txtChoice =input("error turning, pls correct robot, press Y to continue, press Q to stop program")
+                        txtChoice = txtChoice.upper()
+                        if txtChoice == "Y":
+                            turnOrDriveStraigh =1
+                            txtChoice=""
+                        elif txtChoice =="Q":
+                            txtChoice =="Q"
                     # pingThread.start()
 
                 except (KeyboardInterrupt):
@@ -468,18 +483,8 @@ if __name__ == "__main__":
                     print("DONE with turn command")
                     # runPingThread.clear()
                     # pingThread.join()
-                    txtChoice =input("Do you want to go straight for {0}m or skip command,or redo command Y=yes, R=Redo,Q=Stop program, anything else= skip going straight".format(commandToExecute["Afstand"]))
-                    txtChoice = txtChoice.upper()
-                    if txtChoice =="R":
-                        turnOrDriveStraigh =2
-                    if txtChoice == "Y":
-                        turnOrDriveStraigh =1
-                        txtChoice=""
-                    elif txtChoice =="Q":
-                        txtChoice =="Q"
-                    else:
-                        turnOrDriveStraigh =0
-                        txtChoice=""
+                   
+                    
             if turnOrDriveStraigh ==1:
             # when driving straigt
                 try:
@@ -503,8 +508,8 @@ if __name__ == "__main__":
                     runDriveInStraightLine.clear()
                     lastCommandId +=1
                     WriteLastCommandIdToFile(lastCommandId)
-                    txtChoice =input("Do you want to get and execute the next command ? (Y/N)")   
-                    txtChoice=txtChoice.upper()
+                    # txtChoice =input("Do you want to get and execute the next command ? (Y/N)")   
+                    # txtChoice=txtChoice.upper()
                          
         else:
             txtChoice =input("invalid input")
