@@ -178,11 +178,18 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     print("STOPPING")
     CommandoSend.clear()
     m.emergency_stop()
-    currentyaw += target
-    if currentyaw < -3.14:
-        currentyaw = currentyaw + 2*3.14
-    elif currentyaw > 3.14:
-        currentyaw = currentyaw - 2*3.14
+    newData = m.readSensors.readAll() 
+    newYaw = currentyaw + target
+    if newYaw < -3.14:
+        newYaw = currentyaw + 2*3.14
+    elif newYaw > 3.14:
+        newYaw = currentyaw - 2*3.14
+    marge = 0.02
+    if !(newData["YAW"]> newYaw - marge || newData["YAW"] < newYaw + marge):
+        currentyaw = newYaw
+        return true
+    else :
+        return false
     # runPintThread.clear()
     # pingThread.join()
 
