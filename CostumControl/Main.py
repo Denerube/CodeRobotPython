@@ -26,6 +26,7 @@ commandArray=[]
 lastCommandId= 0
 lastCommandIdfile="txtLastCmd.txt"
 currentyaw = 0
+vakGrootte=1
 # leftFrontEncoderStart = 0
 # leftBackEncoderStart =0
 # RightFrontEncoderStart =0
@@ -277,7 +278,7 @@ def drive(queueIn:Queue,QueueOther:Queue,QueueCommands:Queue,pingThread,runPingT
                 print("driving straight")
                 startData=queueOtherData.get()    
                 beginData=startData["encoderStartValues"]
-                TargetDistance=startData["TargetDistance"]-0.05
+                TargetDistance=(startData["TargetDistance"]*vakGrootte)-0.05
                 index +=1
                 command["motorValue"]=100
                 command["command"]=m.go_forward
