@@ -14,7 +14,7 @@ from general_controls import GeneralControls
 from datetime import datetime
 
 
-JsonFileName="data.json"
+JsonFileName="jsonData.json"
 
 commandArray=[]
 
