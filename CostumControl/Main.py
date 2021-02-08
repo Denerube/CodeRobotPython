@@ -96,10 +96,10 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     }
     if (target > 0):
         target -=0.1
-        turnLeftOrRight =2
+        turnLeftOrRight =2 #turn right
     elif (target < 0):
         target +=0.1
-        turnLeftOrRight =1
+        turnLeftOrRight =1 #turn left
     
     
     print("turning to target {0}".format(target))
@@ -107,7 +107,8 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     sensorData = m.readSensors.readAll()    
     for i in range(1000):
         sensorData = m.readSensors.readAll()
-        
+    
+    global currentyaw
     start = currentyaw
     print("startpos {0}".format(start))
     yaw = start
@@ -178,6 +179,10 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     CommandoSend.clear()
     m.emergency_stop()
     currentyaw += target
+    if currentyaw < -3.14:
+        currentyaw = currentyaw + 2*3.14
+    elif currentyaw > 3.14:
+        currentyaw = currentyaw - 2*3.14
     # runPintThread.clear()
     # pingThread.join()
 
@@ -367,6 +372,7 @@ if __name__ == "__main__":
     txtChoice=""
     CommandThread.start()
     commands=ReadFromJsonFile()
+    timesRun=0
     
     while txtChoice !="Q":
         if lastCommandId == -1:
@@ -375,7 +381,8 @@ if __name__ == "__main__":
         lastCommandId=readLastCommandIdFromFile()
         commandToExecute=commands[lastCommandId-1]
 
-        if lastCommandId !=1:
+        if lastCommandId !=1 and timesRun ==0:
+            timesRun +=1
             print("last command executed: {0}".format(commands[lastCommandId-1]))
             txtrepeat=input("do you want to repeat this command?")
             if txtrepeat =="Y":
@@ -397,6 +404,7 @@ if __name__ == "__main__":
         txtChoice =input("Do you want to  execute the  command and start the program ? (Y/N),press Q to exit inmediatly")
         
         txtChoice=txtChoice.upper()
+        timesRun +=1
 
 
 
