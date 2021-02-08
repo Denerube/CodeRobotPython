@@ -350,7 +350,7 @@ if __name__ == "__main__":
                             }
 
    
-    queueSensorData = Queue() # output queue of the read thread,read thread will signal here when it is done with the drive command
+    queueSensorData = Queue() # output queue of the read thread
     queueCommands=Queue()
     pingThread=Thread(target=pingThread,args=(queueOtherData,runThreads,runPingThread))
     readDataThread = Thread(target=readDataPutInQue, args=(queueOtherData, queueSensorData,runThreads))
@@ -370,9 +370,11 @@ if __name__ == "__main__":
         lastCommandId=readLastCommandIdFromFile()
         commandToExecute=commands[lastCommandId-1]
         print("executing: {0}".format(commandToExecute))
+
         if ("End" in commandToExecute.keys()):
             print("reached the end")
-            lastCommandId =-1
+            lastCommandId =1
+            WriteLastCommandIdToFile(lastCommandId)
             exit()
 
         txtChoice =input("Do you want to get and execute the next command ? (Y/N),press Q to exit inmediatly")
