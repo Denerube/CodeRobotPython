@@ -25,6 +25,7 @@ WheelCirc=0.27*math.pi
 commandArray=[]
 lastCommandId= 0
 lastCommandIdfile="txtLastCmd.txt"
+currentyaw = 0
 # leftFrontEncoderStart = 0
 # leftBackEncoderStart =0
 # RightFrontEncoderStart =0
@@ -77,7 +78,6 @@ def writeToJsonFile(data):
 def ReadFromJsonFile():
     with open(JsonFileName) as json_file:
         data = json.load(json_file)
-    print (data)
     return data
 
 
@@ -107,8 +107,8 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     sensorData = m.readSensors.readAll()    
     for i in range(1000):
         sensorData = m.readSensors.readAll()
-    
-    start = sensorData["YAW"]
+        
+    start = currentyaw
     print("startpos {0}".format(start))
     yaw = start
     m.emergency_stop_release()
@@ -177,6 +177,7 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
     print("STOPPING")
     CommandoSend.clear()
     m.emergency_stop()
+    currentyaw += target
     # runPintThread.clear()
     # pingThread.join()
 
@@ -331,6 +332,10 @@ def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event,Commando
 
 
 if __name__ == "__main__":
+    sensorData = m.readSensors.readAll()
+    for i in range(1000):
+        sensorData = m.readSensors.readAll()
+    currentyaw = sensorData["YAW"]
     print("STARTING PROGRAM")
     atexit.register(exitHandler)
     
