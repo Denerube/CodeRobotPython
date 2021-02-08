@@ -369,6 +369,18 @@ if __name__ == "__main__":
             exit()
         lastCommandId=readLastCommandIdFromFile()
         commandToExecute=commands[lastCommandId-1]
+
+        if lastCommandId !=1:
+            print("last command executed: {0}".format(commands[lastCommandId-1]))
+            txtrepeat=input("do you want to repeat this command?")
+            if txtrepeat =="Y":
+                commandToExecute=commandToExecute
+            elif txtrepeat =="N":
+                print("executing next command")
+                lastCommandId +=1
+                commandToExecute=commands[lastCommandId-1]
+
+
         print("executing: {0}".format(commandToExecute))
 
         if ("End" in commandToExecute.keys()):
