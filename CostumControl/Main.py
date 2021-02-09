@@ -12,8 +12,10 @@ import requests
 from move_controls import Controls
 from general_controls import GeneralControls
 from datetime import datetime
+from getAllCommands import ApiControls
 
 m=Controls()
+apiControls=ApiControls()
 sensorData=dict()
 instructions=[]
 currentHeading="N"
@@ -362,6 +364,11 @@ def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event,Commando
 
 
 if __name__ == "__main__":
+    print("getting api data")
+    data=apiControls.getAllMoves()
+
+
+
     sensorData = m.readSensors.readAll()
     m.generalControls.send_cmd("SYS CAL")
     for i in range(1000):

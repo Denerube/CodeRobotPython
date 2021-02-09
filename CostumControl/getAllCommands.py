@@ -19,52 +19,55 @@ lastPositionFile="LastPos.txt"
 
 commandArray=[]
 
-def WritePositionToTextfile(lastPos):
-    with open(lastPositionFile,'w') as text_file:
-        text_file.write(str(lastPositionFile))
+
+class ApiControls():
+    def __init__(self):
+        super().__init__()
+
+    def WritePositionToTextfile(self,lastPos):
+        with open(lastPositionFile,'w') as text_file:
+            text_file.write(str(lastPositionFile))
 
 
-def readLastCommandIdFromFile():
-    with open(lastPositionFile) as text_file:
-        dataLastCmdId= text_file.read()
-    return lastPositionFile
+    def readLastCommandIdFromFile(self):
+        with open(lastPositionFile) as text_file:
+            dataLastCmdId= text_file.read()
+        return lastPositionFile
 
 
 
-def getNextMove():
-    url="https://ai-4x4-api.herokuapp.com/plsSendNext"
-    x=requests.get(url)
-    data=x.json()
-    print(data)
-    # writeToJsonFile(data)
-    return data
+    def getNextMove(self):
+        url="https://ai-4x4-api.herokuapp.com/plsSendNext"
+        x=requests.get(url)
+        data=x.json()
+        print(data)
+        # writeToJsonFile(data)
+        if "Empty" in data.keys():
+            return False
+        else:
+            return data
 
 
-def writeToJsonFile(data):
-    with open(JsonFileName, 'w') as json_file:
-        json.dump(data, json_file)
+    def writeToJsonFile(self,data):
+        with open(JsonFileName, 'w') as json_file:
+            json.dump(data, json_file)
 
-def ReadFromJsonFile():
-    with open(JsonFileName) as json_file:
-        data = json.load(json_file)
-    # print (data)
-    return data
+    def ReadFromJsonFile(self):
+        with open(JsonFileName) as json_file:
+            data = json.load(json_file)
+        # print (data)
+        return data
 
-def getAllMoves():
-    data=getNextMove()
+    def getAllMoves(self):
+        data=self.getNextMove()
+        while data == False:
+            data=self.getNextMove()
+        self.writeToJsonFile(data)
+        return 1
 
-    # data = getNextMove()
-    # commandArray.append(data)
-    # while 1:
-    #     data = getNextMove()
-    #     commandArray.append(data)
-    #     if "End" in data.keys():
-    #         break
-    writeToJsonFile(data)
-
-if __name__ == "__main__":
-    getAllMoves()
-    ReadFromJsonFile()
-    print("DONE")
+# if __name__ == "__main__":
+#     getAllMoves()
+#     ReadFromJsonFile()
+#     print("DONE")
     
 
