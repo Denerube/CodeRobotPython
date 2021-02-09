@@ -100,10 +100,12 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
         "command": "null"
     }
     if (target > 0):
-        target -=0.1
+        target -=0.12
+        target=round(target,2)
         turnLeftOrRight =2 #turn right
     elif (target < 0):
-        target +=0.1
+        target +=0.12
+        target=round(target,2)
         turnLeftOrRight =1 #turn left
     
     
@@ -135,7 +137,7 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
         # print("WACHT")  
         # pingThread.start()
         sleep(1)
-        while yawdiff(start, yaw) > target:
+        while yawdiff(start, yaw) >= target:
             try:
                 sensorData = m.readSensors.readAll()
                 yaw = sensorData["YAW"]
@@ -160,7 +162,7 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
         # print("WACHT")
         # pingThread.start()      
         sleep(1)
-        while yawdiff(start, yaw) < target:
+        while yawdiff(start, yaw) <= target:
             try:     
                 sensorData = m.readSensors.readAll()
                 yaw = sensorData["YAW"]
@@ -191,7 +193,7 @@ def turnRobot (target,pingThread:Thread,runPintThread:threading.Event,queueComma
         newYaw = currentyaw - 2*3.14
     marge = 0.1
     print ("newdata yaw {0} VS new yaw {1} marge {2}".format(newData["YAW"],newYaw,marge))
-    if  (newData["YAW"]> newYaw - marge and newData["YAW"] < newYaw + marge):
+    if  (newData["YAW"]>= newYaw - marge and newData["YAW"] <= newYaw + marge):
         currentyaw = newYaw
         return True
     else :
@@ -208,7 +210,7 @@ def yawdiff(start, yaw):
         return yaw-start
 
 def getNextMove():
-    url="https://ai-4x4-api.herokuapp.com/plsSendNext"
+    url=url
     x=requests.get(url)
     data=x.json()
     print(data)
@@ -472,6 +474,8 @@ if __name__ == "__main__":
            
             
             turnOrDriveStraigh:int #0= nothing, 1= drive straight,2=turn
+            if lastCommand and commandToExecute["Direction"] == "F":
+                turnOrDriveStraigh =-1
             if commandToExecute["Direction"] == "F":
                 turnOrDriveStraigh =1
             elif commandToExecute["Direction"] =="B":
