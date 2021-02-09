@@ -20,9 +20,9 @@ class GeneralControls:
         # if data_send != len(data):
         #     raise RuntimeError
         self.client_socket.sendall(data)
-        # if (cmd != "PING"):
-        #     print(cmd)
-        # print(cmd)
+        if (cmd != "PING"):
+            print(cmd)
+        
         # time.sleep(1.0/self.send_freq)
 
     def close_connection(self):

@@ -19,14 +19,14 @@ apiControls=ApiControls()
 sensorData=dict()
 instructions=[]
 currentHeading="N"
-url="https://ai-4x4-api.herokuapp.com/plsSendNext"
+url="http://127.0.0.1:3000/getmoves"
 lastMoveID=0
 moveCommand = { "OrderNr" : 0 , "Direction" : "", "Afstand" : 0 }
-JsonFileName="jsonData.json"
+JsonFileName="./jsonData.json"
 WheelCirc=0.27*math.pi
 commandArray=[]
 lastCommandId= 0
-lastCommandIdfile="txtLastCmd.txt"
+lastCommandIdfile="./txtLastCmd.txt"
 currentyaw = 0
 vakGrootte=1
 
@@ -440,7 +440,8 @@ if __name__ == "__main__":
             WriteLastCommandIdToFile(lastCommandId)
             exit()
         
-        if lastCommandId -1 == amountOfCommands -1:
+        if lastCommandId  == amountOfCommands :
+            print("last command")
             lastCommand==True
 
         txtChoice =input("Do you want to  execute the  command and start the program ? (Y/N),press Q to exit inmediatly")
@@ -474,7 +475,7 @@ if __name__ == "__main__":
             if commandToExecute["Direction"] == "F":
                 turnOrDriveStraigh =1
             elif commandToExecute["Direction"] =="B":
-                turnOrDriveStraigh =1
+                turnOrDriveStraigh =2
                 goBack= True
             else:
                 turnOrDriveStraigh =2
@@ -487,6 +488,8 @@ if __name__ == "__main__":
                     turnDirection=3.14/2
                 elif commandToExecute["Direction"] =="L":
                     turnDirection= -3.14/2
+                elif commandToExecute["Direction"] =="B":
+                    turnDirection = 3.14
                    
                 
                 try:

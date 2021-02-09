@@ -37,15 +37,16 @@ class ApiControls():
 
 
     def getNextMove(self):
-        url="https://ai-4x4-api.herokuapp.com/plsSendNext"
+        url="http://127.0.0.1:3000/getmoves"
         x=requests.get(url)
+        print(x)
         data=x.json()
         print(data)
         # writeToJsonFile(data)
-        if "Empty" in data.keys():
-            return False
-        else:
-            return data
+        for ele in data:
+            if "Empty" in ele.keys():
+                return False
+        return data
 
 
     def writeToJsonFile(self,data):
