@@ -365,7 +365,10 @@ def CommandThreadFunction(commandQueue:Queue,runThreads:threading.Event,Commando
 
 if __name__ == "__main__":
     print("getting api data")
-    data=apiControls.getAllMoves()
+
+    checkiffirst=readLastCommandIdFromFile()
+    if checkiffirst ==1:
+        data=apiControls.getAllMoves()
 
 
 
