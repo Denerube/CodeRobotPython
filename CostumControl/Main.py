@@ -370,8 +370,6 @@ if __name__ == "__main__":
     if checkiffirst ==1:
         data=apiControls.getAllMoves()
 
-
-
     sensorData = m.readSensors.readAll()
     m.generalControls.send_cmd("SYS CAL")
     for i in range(1000):
